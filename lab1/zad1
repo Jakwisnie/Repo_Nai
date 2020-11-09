@@ -1,0 +1,34 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+
+using namespace cv; //nie potrzeba pisac cv : :
+using namespace std;
+
+int main(int argc, char** argv) {
+    bool capturing = true;
+    // Question for you
+    // cv::VideoCapture cap( "szukaj_zielonego.webm" );
+     VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        cerr << "error opening frames source" << endl;
+        return -1;
+    }
+    cout << "Video size: " << cap.get(CAP_PROP_FRAME_WIDTH)
+        << "x" << cap.get(CAP_PROP_FRAME_HEIGHT) << endl;
+    do {
+        Mat frame;
+        Mat fliped = frame; //dodajemy ramke flipa
+        if (cap.read(frame)) {
+            flip(frame,fliped, 1); // bierzemy  obraz z frame  flipujemy i dajemy do fliped
+            imshow("obrocony", fliped);
+        }
+        else {
+            // stream finished
+            capturing = false;
+        }
+        //czekaj na klawisz, sprawdz czy to jest 'esc'
+        if ((waitKey(1000.0 / 60.0) & 0x0ff) == 27) capturing = false;
+    } while (capturing);
+    return 0;
+}
