@@ -1,0 +1,86 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+
+using namespace cv; //nie potrzeba pisac cv : :
+using namespace std;
+
+int main(int argc, char** argv) {
+    bool capturing = true;
+    // Question for you
+    // cv::VideoCapture cap( "szukaj_zielonego.webm" );
+     VideoCapture cap(0);
+     VideoCapture cap2(1);  
+    if (!cap.isOpened()) {
+        cerr << "error opening frames source" << endl;
+        return -1;
+    }
+    int width = 0;
+    int height = 0;
+    cout << endl;
+    cout << "Podaj szerokosc okna" << endl;
+    cin >> width;
+    cout << "Podaj wysokosc okna" << endl;
+    cin >> height;
+
+    namedWindow("Opcje HSV", WINDOW_AUTOSIZE); 
+    namedWindow("Efekt HSV", WINDOW_AUTOSIZE);
+
+    int mOdcien = 0;
+    int wOdcien = 0;
+    createTrackbar("slabszy odcien", "Opcje HSV", &mOdcien, 180); //nazwa wyswietlana , nazwa okna do ktorego ma przynalezec , zmienna
+    createTrackbar("mocniejszy odcien", "Opcje HSV", &wOdcien, 180);
+    int mNasycenie = 0;
+    int wNasycenie = 0;
+    createTrackbar("slabsze nasycenie", "Opcje HSV", &mNasycenie, 255);
+    createTrackbar("mocniejsze nasycenie", "Opcje HSV", &wNasycenie, 255);
+    int lRangeVal = 0;
+    int uRangeVal = 0;
+    createTrackbar("Lower Val", "Opcje HSV", &lRangeVal, 255);
+    createTrackbar("Upper Val", "Opcje HSV", &uRangeVal, 255);
+
+   
+    do {
+        Mat frame, MyWindow, RangeHSV, HSV;
+        cap >> frame;
+        Mat modded = frame; //dodajemy okno do zmiany
+        if (cap.read(frame)) {
+            if (width > 0 && height > 0) resize(frame, MyWindow, { width,height });
+            else resize(frame, MyWindow, { 320,200 });
+            putText(frame, "Niebieski ", { 300,30 }, FONT_HERSHEY_PLAIN, 1.0, { 255,4,4,4 });
+            imshow("Okno z podanym rozmiarem", MyWindow); //okno o podanym rozmiarze
+            imshow("Okno podstawowe", frame); //okno podstawowe
+            GaussianBlur(MyWindow, modded, Size(5, 5), 0); //dodawanie efektu gaussian do okna modded
+            imshow("Efekt Gaussian", modded);//okno z efektem gaussian (rozmyciem)
+        }
+        else {
+            // stream finished
+            capturing = false;
+        }
+
+        cvtColor(frame, RangeHSV, COLOR_BGR2HSV);
+        cvtColor(frame, HSV, COLOR_BGR2HSV);
+
+        inRange(RangeHSV,   
+            Scalar(mOdcien, mNasycenie, lRangeVal),
+            Scalar(wOdcien, wNasycenie, uRangeVal),
+            RangeHSV);
+
+        imshow("zasięg HSV", RangeHSV);
+        imshow("Efekt HSV", HSV);
+
+
+        if (waitKey(30) == 'x') {
+
+            Mat frameROI;
+            frameROI = frame.clone();
+            auto r = selectROI("Klatka", frameROI);
+            Mat roi = frameROI(r);
+            imshow("ROI", roi);
+            imwrite("Klatka.JPG", roi);
+        }
+        //czekaj na klawisz, sprawdz czy to jest 'esc'
+        if ((waitKey(1000.0 / 60.0) & 0x0ff) == 27) capturing = false;
+    } while (capturing);
+    return 0;
+}   
